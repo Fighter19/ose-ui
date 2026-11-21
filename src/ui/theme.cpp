@@ -43,7 +43,21 @@ float Theme::constant(std::string_view type, std::string_view name) const {
     return c ? *c : 0.0f;
 }
 
-std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
+namespace {
+// The colours the two flat themes differ in; everything else is shared.
+struct ModernPalette {
+    const char *bg, *panel, *panelAlt, *input, *button, *buttonHover, *accent, *selection, *border;
+    const char *text, *dim, *disabled;
+    const char *hoverText;     // text of a hovered button
+    const char *menuHover;     // bar under the hovered menu item (drawn with the normal text colour)
+    const char *tabBar, *guide, *separator;
+    const char *scrollGrabber, *scrollGrabberHover;
+    const char *tooltip, *tooltipBorder, *tooltipText;
+    const char *warning, *error, *success;
+    float scrollTrack;         // alpha of the black scroll track
+};
+
+std::shared_ptr<Theme> makeModern(const std::string& fontDir, const ModernPalette& p) {
     auto t = std::make_shared<Theme>();
     t->font = Font::loadFile(fontDir + "/DejaVuSans.ttf");
     t->boldFont = Font::loadFile(fontDir + "/DejaVuSans-Bold.ttf");
@@ -52,24 +66,25 @@ std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
     if (!t->boldFont) t->boldFont = t->font;
     if (!t->monoFont) t->monoFont = t->font;
 
-    const Color bg = parseColor("#1c1d20"), panel = parseColor("#25272b"), panelAlt = parseColor("#2e3035"),
-                input = parseColor("#18191c"), button = parseColor("#363940"), buttonHover = parseColor("#42464e"),
-                accent = parseColor("#3d8bfd"), selection = parseColor("#2b5797"), border = parseColor("#101113"),
-                text = parseColor("#d7d9de"), dim = parseColor("#8b9099"), disabled = parseColor("#5c6068");
+    const Color bg = parseColor(p.bg), panel = parseColor(p.panel), panelAlt = parseColor(p.panelAlt),
+                input = parseColor(p.input), button = parseColor(p.button), buttonHover = parseColor(p.buttonHover),
+                accent = parseColor(p.accent), selection = parseColor(p.selection), border = parseColor(p.border),
+                text = parseColor(p.text), dim = parseColor(p.dim), disabled = parseColor(p.disabled);
+    const Color white = parseColor("#ffffff");
     Theme& th = *t;
     // Defaults for every type.
     th.setColor("*", "font_color", text);
-    th.setColor("*", "font_hover_color", parseColor("#ffffff"));
-    th.setColor("*", "font_pressed_color", parseColor("#ffffff"));
+    th.setColor("*", "font_hover_color", parseColor(p.hoverText));
+    th.setColor("*", "font_pressed_color", white);  // on the accent or the selection colour
     th.setColor("*", "font_disabled_color", disabled);
     th.setColor("*", "font_dim_color", dim);
     th.setColor("*", "accent", accent);
     th.setColor("*", "selection", selection);
-    th.setColor("*", "font_selected_color", parseColor("#ffffff"));  // text on a selected row
+    th.setColor("*", "font_selected_color", white);  // text on a selected row
     th.setColor("*", "background", bg);
-    th.setColor("*", "warning", parseColor("#e5a50a"));
-    th.setColor("*", "error", parseColor("#e5484d"));
-    th.setColor("*", "success", parseColor("#46a758"));
+    th.setColor("*", "warning", parseColor(p.warning));
+    th.setColor("*", "error", parseColor(p.error));
+    th.setColor("*", "success", parseColor(p.success));
     th.setConstant("*", "separation", 4);
     th.setConstant("*", "h_separation", 4);
     th.setConstant("*", "v_separation", 4);
@@ -126,6 +141,8 @@ std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
     StyleBox pbp = pb;
     pbp.bg = parseColor("#246428");
     th.setBox("PlayButton", "pressed", pbp);
+    th.setColor("PlayButton", "font_color", white);
+    th.setColor("PlayButton", "font_hover_color", white);
 
     th.setBase("CheckBox", "ToolButton");
     th.setBase("OptionButton", "Button");
@@ -143,14 +160,14 @@ std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
 
     StyleBox popup = StyleBox::flat(panelAlt, 4, 4).withBorder(border, 1);
     th.setBox("PopupMenu", "panel", popup);
-    th.setBox("PopupMenu", "hover", StyleBox::flat(selection, 3, 0));
+    th.setBox("PopupMenu", "hover", StyleBox::flat(parseColor(p.menuHover), 3, 0));
     th.setColor("PopupMenu", "font_accelerator_color", dim);
-    th.setColor("PopupMenu", "separator", parseColor("#3c3f46"));
+    th.setColor("PopupMenu", "separator", parseColor(p.separator));
     th.setConstant("PopupMenu", "item_height", 24);
     th.setBox("MenuBar", "panel", StyleBox::flat(panelAlt, 0, 0));
 
     th.setBox("TabContainer", "panel", StyleBox::flat(panel, 0, 0));
-    th.setBox("TabContainer", "tabbar_background", StyleBox::flat(parseColor("#1f2124"), 0, 0));
+    th.setBox("TabContainer", "tabbar_background", StyleBox::flat(parseColor(p.tabBar), 0, 0));
     StyleBox ts = StyleBox::flat(panel, 0, 0).withMargins(10, 5, 10, 5);
     ts.radius = 3;
     th.setBox("TabContainer", "tab_selected", ts);
@@ -166,29 +183,60 @@ std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
     th.setBox("Tree", "panel", StyleBox::flat(input, 0, 2));
     th.setBox("Tree", "selected", StyleBox::flat(selection, 2, 0));
     th.setBox("Tree", "hover", StyleBox::flat(withAlpha(buttonHover, 0.5f), 2, 0));
-    th.setColor("Tree", "guide_color", parseColor("#3a3d44"));
+    th.setColor("Tree", "guide_color", parseColor(p.guide));
     th.setConstant("Tree", "item_height", 22);
     th.setConstant("Tree", "indent", 16);
     th.setBase("ItemList", "Tree");
 
-    th.setBox("ScrollBar", "scroll", StyleBox::flat({0, 0, 0, 0.15f}, 4, 0));
-    th.setBox("ScrollBar", "grabber", StyleBox::flat(parseColor("#4a4e57"), 4, 0));
-    th.setBox("ScrollBar", "grabber_hover", StyleBox::flat(parseColor("#5d626d"), 4, 0));
+    th.setBox("ScrollBar", "scroll", StyleBox::flat({0, 0, 0, p.scrollTrack}, 4, 0));
+    th.setBox("ScrollBar", "grabber", StyleBox::flat(parseColor(p.scrollGrabber), 4, 0));
+    th.setBox("ScrollBar", "grabber_hover", StyleBox::flat(parseColor(p.scrollGrabberHover), 4, 0));
     th.setConstant("ScrollBar", "width", 10);
 
     th.setConstant("Split", "separation", 5);
     th.setColor("Split", "grabber", border);
     th.setColor("Split", "grabber_hover", accent);
 
-    th.setBox("Tooltip", "panel", StyleBox::flat(parseColor("#101114"), 3, 6).withBorder(parseColor("#3c3f46"), 1));
+    th.setBox("Tooltip", "panel", StyleBox::flat(parseColor(p.tooltip), 3, 6).withBorder(parseColor(p.tooltipBorder), 1));
+    th.setColor("Tooltip", "font_color", parseColor(p.tooltipText));
     th.setBox("ProgressBar", "background", StyleBox::flat(input, 3, 0));
     th.setBox("ProgressBar", "fill", StyleBox::flat(accent, 3, 0));
-    th.setColor("Separator", "color", parseColor("#3a3d44"));
+    th.setColor("Separator", "color", parseColor(p.separator));
     th.setBox("Window", "panel", StyleBox::flat(panel, 5, 0).withBorder(border, 1));
     th.setBox("Window", "titlebar", StyleBox::flat(panelAlt, 5, 6));
     th.setBox("Viewport", "frame", StyleBox().withBorder(border, 1));
     th.setColor("Viewport", "focus_border", withAlpha(accent, 0.7f));
     return t;
+}
+
+}  // namespace
+
+std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
+    ModernPalette p{};
+    p.bg = "#1c1d20", p.panel = "#25272b", p.panelAlt = "#2e3035", p.input = "#18191c";
+    p.button = "#363940", p.buttonHover = "#42464e", p.accent = "#3d8bfd", p.selection = "#2b5797", p.border = "#101113";
+    p.text = "#d7d9de", p.dim = "#8b9099", p.disabled = "#5c6068";
+    p.hoverText = "#ffffff", p.menuHover = "#2b5797";
+    p.tabBar = "#1f2124", p.guide = "#3a3d44", p.separator = "#3c3f46";
+    p.scrollGrabber = "#4a4e57", p.scrollGrabberHover = "#5d626d";
+    p.tooltip = "#101114", p.tooltipBorder = "#3c3f46", p.tooltipText = "#d7d9de";
+    p.warning = "#e5a50a", p.error = "#e5484d", p.success = "#46a758";
+    p.scrollTrack = 0.15f;
+    return makeModern(fontDir, p);
+}
+
+std::shared_ptr<Theme> Theme::makeLight(const std::string& fontDir) {
+    ModernPalette p{};
+    p.bg = "#e9ebef", p.panel = "#f5f6f8", p.panelAlt = "#e4e6eb", p.input = "#ffffff";
+    p.button = "#dcdfe5", p.buttonHover = "#cdd1d9", p.accent = "#2f6fdb", p.selection = "#2f6fdb", p.border = "#b9bdc6";
+    p.text = "#1f2328", p.dim = "#656d78", p.disabled = "#a3a9b3";
+    p.hoverText = "#000000", p.menuHover = "#cfe0fb";
+    p.tabBar = "#dadde3", p.guide = "#c9cdd4", p.separator = "#c9cdd4";
+    p.scrollGrabber = "#b3b8c2", p.scrollGrabberHover = "#959ba7";
+    p.tooltip = "#2b2d31", p.tooltipBorder = "#2b2d31", p.tooltipText = "#f2f3f5";
+    p.warning = "#9a6700", p.error = "#c62828", p.success = "#2e7d32";
+    p.scrollTrack = 0.06f;
+    return makeModern(fontDir, p);
 }
 
 bool Theme::loadOverrides(std::string_view text, std::string* error) {
@@ -273,6 +321,9 @@ std::shared_ptr<Theme> Theme::makeClassic(const std::string& fontDir) {
 
     th.setColor("*", "font_color", text);
     th.setColor("*", "font_hover_color", text);
+    th.setColor("*", "warning", parseColor("#806000"));
+    th.setColor("*", "error", parseColor("#c00000"));
+    th.setColor("*", "success", parseColor("#007000"));
     th.setColor("*", "font_pressed_color", text);
     th.setColor("*", "font_disabled_color", disabled);
     th.setColor("*", "font_dim_color", dim);

@@ -12,8 +12,10 @@ and is used by OpenSE and by [Blutmond](https://github.com/Fighter19/blutmond).
   16-bit indices otherwise.
 - **Platform layer** (optional): **SDL3** (`platform/sdl3`): window, GL context, input,
   clipboard, cursors, dropped files, main loop, also in the browser with Emscripten.
-- **Themes**: the dark editor theme and a **classic** light-grey theme with raised and sunken
-  3D edges (`Theme::makeClassic`), plus overrides from XML theme files.
+- **Themes**: the flat editor theme in **dark** and **light** (`Theme::makeDark`,
+  `Theme::makeLight`) and a **classic** light-grey theme with raised and sunken 3D edges
+  (`Theme::makeClassic`), plus overrides from XML theme files. `Context::setTheme` switches
+  while running.
 
 ## Layout
 

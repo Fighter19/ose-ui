@@ -68,6 +68,8 @@ public:
     // The editor's dark theme (in the spirit of Source 2 Hammer). Fonts from `fontDir`
     // (engine/ui/fonts); returns a theme without fonts if they cannot be read.
     static std::shared_ptr<Theme> makeDark(const std::string& fontDir);
+    // The light counterpart of makeDark: same flat look, dark text on light panels.
+    static std::shared_ptr<Theme> makeLight(const std::string& fontDir);
     // A classic light-grey theme with raised and sunken 3D edges, in the style of 1990s
     // desktop tools (Lunar Magic, RPG Maker 2000). Same control types as makeDark.
     static std::shared_ptr<Theme> makeClassic(const std::string& fontDir);

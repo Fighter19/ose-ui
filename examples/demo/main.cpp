@@ -1,6 +1,6 @@
-// ose-ui demo: a small editor-like window in the classic or the dark theme.
+// ose-ui demo: a small editor-like window in the classic, the dark or the light theme.
 //
-//   ose_ui_demo [--dark] [--frames N --screenshot out.ppm]
+//   ose_ui_demo [--dark | --light] [--frames N --screenshot out.ppm]
 //
 // With --frames the demo renders N frames, optionally writes the last one, and exits (used to
 // test the platform layer headless with SDL_VIDEO_DRIVER=offscreen).
@@ -49,11 +49,12 @@ static const char* kLayout = R"(<Panel theme-type="Background" anchors="full"><V
 </VBox></Panel>)";
 
 int main(int argc, char** argv) {
-    bool dark = false;
+    bool dark = false, light = false;
     int frames = 0;
     const char* screenshot = nullptr;
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "--dark") == 0) dark = true;
+        if (std::strcmp(argv[i], "--light") == 0) light = true;
         else if (std::strcmp(argv[i], "--frames") == 0 && i + 1 < argc) frames = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--screenshot") == 0 && i + 1 < argc) screenshot = argv[++i];
     }
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
     desc.title = "ose-ui demo";
     desc.width = 800;
     desc.height = 500;
-    desc.theme = dark ? Theme::makeDark(OSE_UI_FONT_DIR) : Theme::makeClassic(OSE_UI_FONT_DIR);
+    desc.theme = dark ? Theme::makeDark(OSE_UI_FONT_DIR) : light ? Theme::makeLight(OSE_UI_FONT_DIR) : Theme::makeClassic(OSE_UI_FONT_DIR);
     std::string error;
     if (!app.init(desc, &error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
