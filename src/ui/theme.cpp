@@ -65,6 +65,7 @@ std::shared_ptr<Theme> Theme::makeDark(const std::string& fontDir) {
     th.setColor("*", "font_dim_color", dim);
     th.setColor("*", "accent", accent);
     th.setColor("*", "selection", selection);
+    th.setColor("*", "font_selected_color", parseColor("#ffffff"));  // text on a selected row
     th.setColor("*", "background", bg);
     th.setColor("*", "warning", parseColor("#e5a50a"));
     th.setColor("*", "error", parseColor("#e5484d"));
@@ -277,6 +278,7 @@ std::shared_ptr<Theme> Theme::makeClassic(const std::string& fontDir) {
     th.setColor("*", "font_dim_color", dim);
     th.setColor("*", "accent", title);
     th.setColor("*", "selection", select);
+    th.setColor("*", "font_selected_color", selectText);  // text on a selected row
     th.setColor("*", "background", face);
 
     th.setBox("Panel", "panel", StyleBox::flat(face, 0, 0));

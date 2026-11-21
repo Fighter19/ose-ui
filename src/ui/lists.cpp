@@ -115,29 +115,34 @@ void Tree::draw(Canvas& c) {
     for (int i = first; i < last; ++i) {
         TreeItem* it = r[size_t(i)];
         Rect row{rect_.x, rect_.y + 2 + float(i) * h, rect_.w, h};
-        if (isSelected(it)) c.styleBox(row.shrink(2, 0, 2, 0), box("selected"));
+        // A selected row has its own text colour (white on the selection bar); what is dim
+        // elsewhere is the same colour a little fainter, and icons give up their own colour
+        // so they stay readable on the bar.
+        bool sel = isSelected(it);
+        Color fc = sel ? color("font_selected_color") : color("font_color");
+        Color dimc = sel ? withAlpha(fc, 0.8f) : color("font_dim_color");
+        if (sel) c.styleBox(row.shrink(2, 0, 2, 0), box("selected"));
         else if (it == hover_) c.styleBox(row.shrink(2, 0, 2, 0), box("hover"));
         if (it == dropItem_) c.border(row.shrink(2, 0, 2, 0), color("accent"), 1, 2);
         int depth = it->depth() - (hideRoot ? 1 : 0);
         float x = row.x + 4 + float(depth) * indent;
         if (!it->children_.empty())
-            c.icon({x, row.y, 12, h}, iconCodepoint(it->expanded ? "caret-down" : "caret-right"), iconFont(), px * 0.85f, color("font_dim_color"));
+            c.icon({x, row.y, 12, h}, iconCodepoint(it->expanded ? "caret-down" : "caret-right"), iconFont(), px * 0.85f, dimc);
         x += 14;
-        Color fc = color("font_color");
         if (!it->icon.empty()) {
-            c.icon({x, row.y, 16, h}, iconCodepoint(it->icon), iconFont(), px * 0.9f, it->iconColor.w > 0 ? it->iconColor : color("font_dim_color"));
+            c.icon({x, row.y, 16, h}, iconCodepoint(it->icon), iconFont(), px * 0.9f, it->iconColor.w > 0 && !sel ? it->iconColor : dimc);
             x += 20;
         }
         float right = row.right() - 6;
         if (!it->toggleIcon.empty()) {
             Rect tr{right - 18, row.y, 18, h};
             c.icon(tr, iconCodepoint(it->toggleOn ? it->toggleIcon : (it->toggleIconOff.empty() ? it->toggleIcon : it->toggleIconOff)),
-                   iconFont(), px * 0.85f, it->toggleOn ? color("font_dim_color") : color("font_disabled_color"));
+                   iconFont(), px * 0.85f, it->toggleOn ? dimc : sel ? withAlpha(fc, 0.5f) : color("font_disabled_color"));
             right -= 22;
         }
         if (!it->secondary.empty()) {
             float sw = std::min(font().measure(it->secondary, px * 0.9f) + 6, (right - x) * 0.45f);
-            c.textIn({right - sw, row.y, sw, h}, it->secondary, font(), px * 0.9f, color("font_dim_color"), Align::End);
+            c.textIn({right - sw, row.y, sw, h}, it->secondary, font(), px * 0.9f, dimc, Align::End);
             right -= sw + 4;
         }
         c.textIn({x, row.y, std::max(0.0f, right - x), h}, it->text, font(), px, fc);
@@ -298,15 +303,18 @@ void ItemList::draw(Canvas& c) {
             if (i >= int(items.size())) break;
             const Item& it = items[size_t(i)];
             Rect r = itemRect(i);
-            if (i == selected) c.styleBox(r.shrink(1), box("selected"));
+            bool sel = i == selected;
+            Color fc = sel ? color("font_selected_color") : color("font_color");
+            Color dimc = sel ? withAlpha(fc, 0.8f) : color("font_dim_color");
+            if (sel) c.styleBox(r.shrink(1), box("selected"));
             else if (hovered() && r.contains(context() ? context()->mousePos() : Vec2{})) c.styleBox(r.shrink(1), box("hover"));
             if (tileSize <= 0) {
                 float x = r.x + 4;
                 if (!it.icon.empty()) {
-                    c.icon({x, r.y, 16, r.h}, iconCodepoint(it.icon), iconFont(), px, it.iconColor.w > 0 ? it.iconColor : color("font_dim_color"));
+                    c.icon({x, r.y, 16, r.h}, iconCodepoint(it.icon), iconFont(), px, it.iconColor.w > 0 && !sel ? it.iconColor : dimc);
                     x += 20;
                 }
-                c.textIn({x, r.y, r.right() - x - 4, r.h}, it.text, font(), px, color("font_color"));
+                c.textIn({x, r.y, r.right() - x - 4, r.h}, it.text, font(), px, fc);
                 continue;
             }
             Rect thumb{r.x + 4, r.y + 4, tileSize, tileSize};
@@ -317,7 +325,7 @@ void ItemList::draw(Canvas& c) {
                 c.icon(thumb, iconCodepoint(it.icon.empty() ? "file" : it.icon), iconFont(), tileSize * 0.4f,
                        it.iconColor.w > 0 ? it.iconColor : color("font_dim_color"));
             }
-            c.textIn({r.x + 2, thumb.bottom() + 2, r.w - 4, r.bottom() - thumb.bottom() - 4}, it.text, font(), px, color("font_color"), Align::Center);
+            c.textIn({r.x + 2, thumb.bottom() + 2, r.w - 4, r.bottom() - thumb.bottom() - 4}, it.text, font(), px, fc, Align::Center);
         }
 }
 
